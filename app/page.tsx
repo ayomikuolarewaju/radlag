@@ -1,132 +1,98 @@
-// app/page.tsx
 'use client'
 
-import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
-import { 
-  MicrophoneIcon, 
-  UserGroupIcon, 
-  CurrencyDollarIcon,
-  MegaphoneIcon,
-  CakeIcon,
-  AcademicCapIcon 
+import { useMembershipAuth } from '@/contexts/MembershipAuthContext'
+import {
+  MicrophoneIcon, UserGroupIcon, CurrencyDollarIcon,
+  MegaphoneIcon, CakeIcon, AcademicCapIcon,
+  CalendarIcon, BriefcaseIcon, PhotoIcon
 } from '@heroicons/react/24/outline'
 
 const features = [
-  {
-    name: 'Yearly Dues',
-    href: '/dues',
-    icon: CurrencyDollarIcon,
-    description: 'Pay and track your annual membership dues',
-    color: 'bg-green-500'
-  },
-  {
-    name: 'Announcements',
-    href: '/announcements',
-    icon: MegaphoneIcon,
-    description: 'Stay updated with latest association news',
-    color: 'bg-blue-500'
-  },
-  {
-    name: 'Member Directory',
-    href: '/members',
-    icon: UserGroupIcon,
-    description: 'Connect with fellow RADLAG members',
-    color: 'bg-purple-500'
-  },
-  {
-    name: 'Birthday Wishes',
-    href: '/birthdays',
-    icon: CakeIcon,
-    description: 'Celebrate birthdays with fellow alumni',
-    color: 'bg-pink-500'
-  },
-  {
-    name: 'Tutorials',
-    href: '/tutorials',
-    icon: AcademicCapIcon,
-    description: 'Radio production techniques & resources',
-    color: 'bg-yellow-500'
-  },
-  {
-    name: 'Radio Programs',
-    href: '/programs',
-    icon: MicrophoneIcon,
-    description: 'Share and discover radio programs',
-    color: 'bg-red-500'
-  }
+  { name: 'Yearly Dues', href: '/dues', icon: CurrencyDollarIcon, description: 'Pay and track your annual membership dues', yoruba: 'San àwọn owó ẹgbẹ́', color: 'bg-green-500' },
+  { name: 'Announcements', href: '/announcements', icon: MegaphoneIcon, description: 'Latest news and updates from RADLAG', yoruba: 'Àwọn Ìròyìn', color: 'bg-blue-500' },
+  { name: 'Member Directory', href: '/members', icon: UserGroupIcon, description: 'Connect with fellow RADLAG alumni', yoruba: 'Ìwé Àkọsílẹ̀ Ọmọ Ẹgbẹ́', color: 'bg-purple-500' },
+  { name: 'Events Calendar', href: '/events', icon: CalendarIcon, description: 'Association events and activities', yoruba: 'Kàlẹ́ńdà Ìṣẹ̀lẹ̀', color: 'bg-indigo-500' },
+  { name: 'Job Board', href: '/jobs', icon: BriefcaseIcon, description: 'Radio industry opportunities for alumni', yoruba: 'Àwọn Iṣẹ́', color: 'bg-teal-500' },
+  { name: 'Photo Gallery', href: '/gallery', icon: PhotoIcon, description: 'Share and relive memories together', yoruba: 'Ibi Àwòrán Wa', color: 'bg-pink-500' },
+  { name: 'Birthday Wishes', href: '/birthdays', icon: CakeIcon, description: 'Celebrate birthdays with fellow alumni', yoruba: 'Ìkí Ọjọ́ Ìbí', color: 'bg-rose-500' },
+  { name: 'Tutorials', href: '/tutorials', icon: AcademicCapIcon, description: 'Radio production learning resources', yoruba: 'Àwọn Ẹ̀kọ́', color: 'bg-yellow-500' },
+  { name: 'Radio Programs', href: '/programs', icon: MicrophoneIcon, description: 'Share and discover radio programs', yoruba: 'Àwọn Ètò Redio', color: 'bg-red-500' },
 ]
 
 export default function Home() {
-  const { user, loading } = useAuth()
+  const { member, loading } = useMembershipAuth()
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600" />
+      </div>
+    )
+  }
+
+  if (!member) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-900 via-orange-800 to-yellow-900 flex items-center justify-center px-4">
+        <div className="text-center text-white max-w-lg">
+          <h1 className="text-6xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent mb-4">
+            RADLAG
+          </h1>
+          <p className="text-xl text-amber-200 mb-2">Radio School Alumni Association</p>
+          <p className="text-gray-300 mb-8">
+            Ile-iṣẹ́ àwọn ọmọ ilé-ìwé Radio — a member-only portal for RADLAG alumni
+          </p>
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white font-semibold px-8 py-3 rounded-lg transition-colors"
+          >
+            Member Login — Wọlé
+          </Link>
+          <p className="text-sm text-amber-300 mt-4">
+            Only verified RADLAG alumni can access this portal
+          </p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white">
-      <div className="relative isolate px-6 pt-14 lg:px-8">
-        <div className="mx-auto max-w-2xl py-32 sm:py-48 lg:py-56">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-              Welcome to RADLAG
-            </h1>
-            <p className="mt-6 text-lg leading-8 text-gray-600">
-              Radio School Alumni Association - Connect, Learn, and Grow together
-            </p>
-            {!user && (
-              <div className="mt-10 flex items-center justify-center gap-x-6">
-                <Link
-                  href="/login"
-                  className="rounded-md bg-blue-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-                >
-                  Member Login
-                </Link>
-                <Link href="/register" className="text-sm font-semibold leading-6 text-gray-900">
-                  Register as Alumnus <span aria-hidden="true">→</span>
-                </Link>
-              </div>
-            )}
-          </div>
+    <div className="bg-gray-50">
+      {/* Welcome banner */}
+      <div className="bg-gradient-to-r from-amber-700 to-orange-700 text-white py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-2xl font-bold">
+            Ẹ káàbọ̀, {member.full_name}!
+          </h2>
+          <p className="text-amber-200 mt-1">
+            Welcome back to RADLAG — your alumni portal
+          </p>
         </div>
       </div>
 
-      {user && (
-        <div className="py-24 sm:py-32">
-          <div className="mx-auto max-w-7xl px-6 lg:px-8">
-            <div className="mx-auto max-w-2xl lg:text-center">
-              <h2 className="text-base font-semibold leading-7 text-blue-600">Member Portal</h2>
-              <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                Everything you need in one place
-              </p>
-            </div>
-            <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
-              <dl className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-3">
-                {features.map((feature) => (
-                  <Link key={feature.name} href={feature.href}>
-                    <div className="flex flex-col cursor-pointer hover:shadow-lg transition-shadow p-6 rounded-lg border border-gray-200">
-                      <dt className="text-base font-semibold leading-7 text-gray-900">
-                        <div className={`mb-6 flex h-10 w-10 items-center justify-center rounded-lg ${feature.color}`}>
-                          <feature.icon className="h-6 w-6 text-white" aria-hidden="true" />
-                        </div>
-                        {feature.name}
-                      </dt>
-                      <dd className="mt-1 flex flex-auto flex-col text-base leading-7 text-gray-600">
-                        <p className="flex-auto">{feature.description}</p>
-                      </dd>
-                    </div>
-                  </Link>
-                ))}
-              </dl>
-            </div>
+      {/* Features grid */}
+      <div className="py-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h3 className="text-2xl font-bold text-gray-900">Member Portal</h3>
+            <p className="text-gray-500 mt-2">Ohun gbogbo ní ibì kan — Everything in one place</p>
+          </div>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {features.map((feature) => (
+              <Link key={feature.name} href={feature.href}>
+                <div className="flex flex-col bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg hover:border-amber-200 transition-all h-full cursor-pointer">
+                  <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-lg ${feature.color}`}>
+                    <feature.icon className="h-6 w-6 text-white" />
+                  </div>
+                  <h4 className="font-semibold text-gray-900">{feature.name}</h4>
+                  <p className="text-sm text-amber-600 mt-0.5">{feature.yoruba}</p>
+                  <p className="text-sm text-gray-500 mt-2 flex-1">{feature.description}</p>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

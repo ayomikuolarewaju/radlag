@@ -1,8 +1,7 @@
-// app/layout.tsx
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { AuthProvider } from '@/contexts/AuthContext'
+import { Providers } from '@/app/provider'
 import Navigation from '@/components/Navigation'
 import { Toaster } from 'react-hot-toast'
 
@@ -13,21 +12,17 @@ export const metadata: Metadata = {
   description: 'Member-only platform for RADLAG alumni',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthProvider>
+        <Providers>
           <Navigation />
           <main className="min-h-screen bg-gray-50">
             {children}
           </main>
           <Toaster position="top-right" />
-        </AuthProvider>
+        </Providers>
       </body>
     </html>
   )

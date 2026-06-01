@@ -2,10 +2,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useMembershipAuth } from '@/contexts/MembershipAuthContext'
+const { member, loading } = useMembershipAuth()
 import { supabase } from '@/lib/supabase'
 import { BriefcaseIcon, MapPinIcon, CurrencyDollarIcon, ClockIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
+import PageHero from '@/components/PageHero'
 
 interface Job {
   id: string
@@ -26,7 +28,7 @@ interface Job {
 }
 
 export default function JobsPage() {
-  const { user } = useAuth()
+  const { member } = useMembershipAuth()
   const [jobs, setJobs] = useState<Job[]>([])
   const [filteredJobs, setFilteredJobs] = useState<Job[]>([])
   const [showForm, setShowForm] = useState(false)
@@ -93,8 +95,8 @@ export default function JobsPage() {
       .from('jobs')
       .insert([{
         ...newJob,
-        posted_by: user?.id,
-        poster_name: user?.user_metadata?.full_name,
+        posted_by: member?.id,
+        poster_name: member?.full_name,
         is_active: true
       }])
 
@@ -140,13 +142,23 @@ export default function JobsPage() {
   if (loading) return <div className="text-center py-12">Loading jobs...</div>
 
   return (
+    <>
+      <PageHero
+        title="Job Board"
+        titleYoruba="Ibi Ìpínkiri Iṣẹ́"
+        subtitle="Career Opportunities"
+        subtitleYoruba="Àwọn Àǹfàní Iṣẹ́"
+        description="Find and post radio industry job opportunities, from entry-level to senior positions"
+        descriptionYoruba="Wa kí o sì pín àwọn iṣẹ́ ní ilé-iṣẹ́ redio láti àwọn iṣẹ́ àkọ́bẹ̀rẹ̀ dé ògbólógbó"
+        imageType="jobs"
+      />
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Job Board</h1>
           <p className="mt-1 text-sm text-gray-600">Find and post radio industry opportunities</p>
         </div>
-        {user && (
+        {member && (
           <button
             onClick={() => setShowForm(!showForm)}
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
@@ -390,5 +402,6 @@ export default function JobsPage() {
         )}
       </div>
     </div>
+    </>
   )
 }

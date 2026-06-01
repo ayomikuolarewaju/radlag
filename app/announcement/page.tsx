@@ -1,9 +1,9 @@
-// app/announcements/page.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useMembershipAuth } from '@/contexts/MembershipAuthContext'
 import { supabase } from '@/lib/supabase'
+import PageHero from '@/components/PageHero'
 import toast from 'react-hot-toast'
 
 interface Announcement {
@@ -15,144 +15,134 @@ interface Announcement {
   priority: 'high' | 'medium' | 'low'
 }
 
+const priorityColors = {
+  high: 'bg-red-100 text-red-800',
+  medium: 'bg-yellow-100 text-yellow-800',
+  low: 'bg-blue-100 text-blue-800',
+}
+
 export default function AnnouncementsPage() {
-  const { user } = useAuth()
+  const { member } = useMembershipAuth()
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [newAnnouncement, setNewAnnouncement] = useState({
-    title: '',
-    content: '',
-    priority: 'medium'
-  })
+  const [form, setForm] = useState({ title: '', content: '', priority: 'medium' })
 
-  useEffect(() => {
-    fetchAnnouncements()
-  }, [])
+  useEffect(() => { fetchAnnouncements() }, [])
 
   const fetchAnnouncements = async () => {
     const { data, error } = await supabase
       .from('announcements')
       .select('*')
       .order('created_at', { ascending: false })
-
-    if (error) {
-      toast.error('Error fetching announcements')
-    } else {
-      setAnnouncements(data || [])
-    }
+    if (error) toast.error('Error fetching announcements')
+    else setAnnouncements(data || [])
     setLoading(false)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const { error } = await supabase
-      .from('announcements')
-      .insert([
-        {
-          ...newAnnouncement,
-          author_id: user?.id,
-          author_name: user?.user_metadata?.full_name
-        }
-      ])
-
-    if (error) {
-      toast.error('Error creating announcement')
-    } else {
+    const { error } = await supabase.from('announcements').insert([{
+      ...form,
+      author_id: member?.id,
+      author_name: member?.full_name,
+    }])
+    if (error) toast.error('Error posting announcement')
+    else {
       toast.success('Announcement published!')
       setShowForm(false)
-      setNewAnnouncement({ title: '', content: '', priority: 'medium' })
+      setForm({ title: '', content: '', priority: 'medium' })
       fetchAnnouncements()
-    }
-  }
-
-  const getPriorityColor = (priority: string) => {
-    switch(priority) {
-      case 'high': return 'bg-red-100 text-red-800'
-      case 'medium': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-blue-100 text-blue-800'
     }
   }
 
   if (loading) return <div className="text-center py-12">Loading...</div>
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-semibold text-gray-900">Announcements</h1>
-        {user && (
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-          >
-            {showForm ? 'Cancel' : 'Post Announcement'}
-          </button>
-        )}
+    <>
+      <div className="relative">
+        <PageHero
+          title="Announcements"
+          titleYoruba="Àwọn Ìròyìn"
+          description="Latest news and important updates from RADLAG leadership"
+        />
       </div>
 
-      {showForm && (
-        <div className="bg-white shadow rounded-lg p-6 mb-8">
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-              <input
-                type="text"
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                value={newAnnouncement.title}
-                onChange={(e) => setNewAnnouncement({...newAnnouncement, title: e.target.value})}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
-              <textarea
-                required
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                value={newAnnouncement.content}
-                onChange={(e) => setNewAnnouncement({...newAnnouncement, content: e.target.value})}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                value={newAnnouncement.priority}
-                onChange={(e) => setNewAnnouncement({...newAnnouncement, priority: e.target.value as any})}
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-xl font-semibold text-gray-900">All Announcements</h2>
+          {member && (
             <button
-              type="submit"
-              className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700"
+              onClick={() => setShowForm(!showForm)}
+              className="bg-amber-600 text-white px-4 py-2 rounded-md hover:bg-amber-700 text-sm"
             >
-              Publish Announcement
+              {showForm ? 'Cancel' : '+ Post Announcement'}
             </button>
-          </form>
+          )}
         </div>
-      )}
 
-      <div className="space-y-6">
-        {announcements.map((announcement) => (
-          <div key={announcement.id} className="bg-white shadow rounded-lg p-6">
-            <div className="flex justify-between items-start mb-4">
+        {showForm && (
+          <div className="bg-white shadow rounded-lg p-6 mb-8">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <h3 className="text-xl font-semibold text-gray-900">{announcement.title}</h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  By {announcement.author_name} • {new Date(announcement.created_at).toLocaleDateString()}
-                </p>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <input
+                  type="text" required
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                />
               </div>
-              <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${getPriorityColor(announcement.priority)}`}>
-                {announcement.priority}
-              </span>
-            </div>
-            <p className="text-gray-700 whitespace-pre-wrap">{announcement.content}</p>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                <textarea
+                  required rows={4}
+                  value={form.content}
+                  onChange={(e) => setForm({ ...form, content: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                <select
+                  value={form.priority}
+                  onChange={(e) => setForm({ ...form, priority: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+              <button type="submit" className="w-full bg-amber-600 text-white py-2 rounded-md hover:bg-amber-700 text-sm">
+                Publish
+              </button>
+            </form>
           </div>
-        ))}
+        )}
+
+        <div className="space-y-6">
+          {announcements.map((a) => (
+            <div key={a.id} className="bg-white shadow rounded-lg p-6">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">{a.title}</h3>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    {a.author_name} · {new Date(a.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${priorityColors[a.priority]}`}>
+                  {a.priority}
+                </span>
+              </div>
+              <p className="text-gray-700 whitespace-pre-wrap text-sm">{a.content}</p>
+            </div>
+          ))}
+          {announcements.length === 0 && (
+            <div className="text-center py-12 text-gray-500">No announcements yet.</div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   )
 }

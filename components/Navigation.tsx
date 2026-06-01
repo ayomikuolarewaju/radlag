@@ -1,23 +1,22 @@
-// components/Navigation.tsx
 'use client'
 
 import { Fragment } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useAuth } from '@/contexts/AuthContext'
+import { useMembershipAuth } from '@/contexts/MembershipAuthContext'
 import { Disclosure, Menu, Transition } from '@headlessui/react'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 
-const navigation = [
-  { name: 'Dashboard', href: '/', current: false },
-  { name: 'Events', href: '/events', current: false },
-  { name: 'Jobs', href: '/jobs', current: false },
-  { name: 'Gallery', href: '/gallery', current: false },
-  { name: 'Dues', href: '/dues', current: false },
-  { name: 'Announcements', href: '/announcements', current: false },
-  { name: 'Members', href: '/members', current: false },
-  { name: 'Birthdays', href: '/birthdays', current: false },
-  { name: 'Tutorials', href: '/tutorials', current: false },
+const navLinks = [
+  { name: 'Home', href: '/' },
+  { name: 'Events', href: '/events' },
+  { name: 'Jobs', href: '/jobs' },
+  { name: 'Gallery', href: '/gallery' },
+  { name: 'Dues', href: '/dues' },
+  { name: 'Announcements', href: '/announcements' },
+  { name: 'Members', href: '/members' },
+  { name: 'Birthdays', href: '/birthdays' },
+  { name: 'Tutorials', href: '/tutorials' },
 ]
 
 function classNames(...classes: string[]) {
@@ -26,12 +25,7 @@ function classNames(...classes: string[]) {
 
 export default function Navigation() {
   const pathname = usePathname()
-  const { user, signOut } = useAuth()
-
-  const updatedNavigation = navigation.map(item => ({
-    ...item,
-    current: pathname === item.href
-  }))
+  const { member, logout } = useMembershipAuth()
 
   return (
     <Disclosure as="nav" className="bg-white shadow">
@@ -41,17 +35,17 @@ export default function Navigation() {
             <div className="flex h-16 justify-between">
               <div className="flex">
                 <div className="flex flex-shrink-0 items-center">
-                  <span className="text-xl font-bold text-blue-600">RADLAG</span>
+                  <Link href="/" className="text-xl font-bold text-amber-600">RADLAG</Link>
                 </div>
-                {user && (
+                {member && (
                   <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                    {updatedNavigation.map((item) => (
+                    {navLinks.map((item) => (
                       <Link
                         key={item.name}
                         href={item.href}
                         className={classNames(
-                          item.current
-                            ? 'border-blue-500 text-gray-900'
+                          pathname === item.href
+                            ? 'border-amber-500 text-gray-900'
                             : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
                           'inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium'
                         )}
@@ -62,18 +56,15 @@ export default function Navigation() {
                   </div>
                 )}
               </div>
+
               <div className="hidden sm:ml-6 sm:flex sm:items-center">
-                {user ? (
+                {member ? (
                   <Menu as="div" className="relative ml-3">
-                    <div>
-                      <Menu.Button className="relative flex rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                        <span className="absolute -inset-1.5" />
-                        <span className="sr-only">Open user menu</span>
-                        <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
-                          {user.user_metadata?.full_name?.charAt(0) || 'U'}
-                        </div>
-                      </Menu.Button>
-                    </div>
+                    <Menu.Button className="flex rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2">
+                      <div className="h-8 w-8 rounded-full bg-amber-600 flex items-center justify-center text-white font-semibold">
+                        {member.full_name?.charAt(0) || 'M'}
+                      </div>
+                    </Menu.Button>
                     <Transition
                       as={Fragment}
                       enter="transition ease-out duration-200"
@@ -84,20 +75,20 @@ export default function Navigation() {
                       leaveTo="transform opacity-0 scale-95"
                     >
                       <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                        <div className="px-4 py-2 text-sm text-gray-500 border-b">
+                          {member.full_name}
+                        </div>
                         <Menu.Item>
                           {({ active }) => (
-                            <Link
-                              href="/profile"
-                              className={classNames(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700')}
-                            >
-                              Your Profile
+                            <Link href="/profile" className={classNames(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700')}>
+                              Profile
                             </Link>
                           )}
                         </Menu.Item>
                         <Menu.Item>
                           {({ active }) => (
                             <button
-                              onClick={signOut}
+                              onClick={logout}
                               className={classNames(active ? 'bg-gray-100' : '', 'block w-full text-left px-4 py-2 text-sm text-gray-700')}
                             >
                               Sign out
@@ -108,23 +99,16 @@ export default function Navigation() {
                     </Transition>
                   </Menu>
                 ) : (
-                  <Link
-                    href="/login"
-                    className="text-sm font-semibold leading-6 text-gray-900"
-                  >
-                    Log in <span aria-hidden="true">→</span>
+                  <Link href="/login" className="text-sm font-semibold text-amber-600 hover:text-amber-700">
+                    Log in →
                   </Link>
                 )}
               </div>
+
+              {/* Mobile menu button */}
               <div className="-mr-2 flex items-center sm:hidden">
-                <Disclosure.Button className="relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
-                  <span className="absolute -inset-0.5" />
-                  <span className="sr-only">Open main menu</span>
-                  {open ? (
-                    <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
-                  ) : (
-                    <Bars3Icon className="block h-6 w-6" aria-hidden="true" />
-                  )}
+                <Disclosure.Button className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500">
+                  {open ? <XMarkIcon className="block h-6 w-6" /> : <Bars3Icon className="block h-6 w-6" />}
                 </Disclosure.Button>
               </div>
             </div>
@@ -132,20 +116,29 @@ export default function Navigation() {
 
           <Disclosure.Panel className="sm:hidden">
             <div className="space-y-1 pb-3 pt-2">
-              {updatedNavigation.map((item) => (
+              {member && navLinks.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
                   className={classNames(
-                    item.current
-                      ? 'bg-blue-50 border-blue-500 text-blue-700'
-                      : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700',
+                    pathname === item.href
+                      ? 'bg-amber-50 border-amber-500 text-amber-700'
+                      : 'border-transparent text-gray-500 hover:bg-gray-50',
                     'block border-l-4 py-2 pl-3 pr-4 text-base font-medium'
                   )}
                 >
                   {item.name}
                 </Link>
               ))}
+              {member ? (
+                <button onClick={logout} className="block w-full text-left border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-500 hover:bg-gray-50">
+                  Sign out
+                </button>
+              ) : (
+                <Link href="/login" className="block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-amber-600">
+                  Log in
+                </Link>
+              )}
             </div>
           </Disclosure.Panel>
         </>
