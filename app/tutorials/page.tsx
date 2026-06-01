@@ -59,7 +59,7 @@ export default function TutorialsPage() {
         <PageHero
           title="Tutorials"
           titleYoruba="Àwọn Ẹ̀kọ́"
-          description="Master radio production techniques, from basics to advanced" subtitle={''} subtitleYoruba={''} descriptionYoruba={''} imageType={'tutorials'}        />
+          description="Master radio production techniques, from basics to advanced" />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

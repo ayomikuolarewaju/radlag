@@ -146,11 +146,8 @@ export default function JobsPage() {
       <PageHero
         title="Job Board"
         titleYoruba="Ibi Ìpínkiri Iṣẹ́"
-        subtitle="Career Opportunities"
-        subtitleYoruba="Àwọn Àǹfàní Iṣẹ́"
         description="Find and post radio industry job opportunities, from entry-level to senior positions"
-        descriptionYoruba="Wa kí o sì pín àwọn iṣẹ́ ní ilé-iṣẹ́ redio láti àwọn iṣẹ́ àkọ́bẹ̀rẹ̀ dé ògbólógbó"
-        imageType="jobs"
+        
       />
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="flex justify-between items-center mb-8">

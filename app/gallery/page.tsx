@@ -139,7 +139,7 @@ export default function GalleryPage() {
         <PageHero
           title="Photo Gallery"
           titleYoruba="Ibi Àwòrán Wa"
-          description="Share and relive memorable moments from RADLAG events and gatherings" subtitle={''} subtitleYoruba={''} descriptionYoruba={''} imageType={'dues'}        />
+          description="Share and relive memorable moments from RADLAG events and gatherings"       />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
