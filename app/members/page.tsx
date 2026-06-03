@@ -1,8 +1,10 @@
 'use client'
+// app/members/page.tsx
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
+import Link from 'next/link'
 import PageHero from '@/components/PageHero'
 import toast from 'react-hot-toast'
 
@@ -17,9 +19,9 @@ interface Member {
 }
 
 export default function MembersPage() {
-  const [members, setMembers] = useState<Member[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [members, setMembers]   = useState<Member[]>([])
+  const [searchTerm, setSearch] = useState('')
+  const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
     const fetch = async () => {
@@ -50,7 +52,8 @@ export default function MembersPage() {
         <PageHero
           title="Member Directory"
           titleYoruba="Ìwé Àkọsílẹ̀ Ọmọ Ẹgbẹ́"
-          description="Connect with fellow RADLAG alumni across the world"  />
+          description="Connect with fellow RADLAG alumni across the world"
+        />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -62,37 +65,36 @@ export default function MembersPage() {
               type="text"
               placeholder="Search by name, location, occupation..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearch(e.target.value)}
               className="block w-full sm:w-72 rounded-md border border-gray-300 py-2 pl-9 pr-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
             />
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((member) => (
-            <div key={member.id} className="bg-white shadow rounded-lg p-5 hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-3">
-                <div className="h-11 w-11 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                  {member.full_name?.charAt(0) || '?'}
+          {filtered.map(member => (
+            <Link key={member.id} href={`/members/${member.id}`}>
+              <div className="bg-white shadow rounded-lg p-5 hover:shadow-md hover:border-amber-200 border border-transparent transition-all cursor-pointer h-full">
+                <div className="flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                    {member.full_name?.charAt(0) || '?'}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 truncate hover:text-amber-700">
+                      {member.full_name}
+                    </p>
+                    <p className="text-sm text-gray-500 truncate">{member.occupation || 'Radio Professional'}</p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="font-medium text-gray-900 truncate">{member.full_name}</p>
-                  <p className="text-sm text-gray-500 truncate">{member.occupation || 'Radio Professional'}</p>
+                <div className="mt-3 space-y-1 text-sm text-gray-600">
+                  {member.graduation_year && (
+                    <p>🎓 Class of {member.graduation_year}{member.graduation_set ? ` (${member.graduation_set})` : ''}</p>
+                  )}
+                  {member.location && <p>📍 {member.location}</p>}
                 </div>
+                <p className="mt-3 text-xs text-amber-600 font-medium">View profile →</p>
               </div>
-              <div className="mt-3 space-y-1 text-sm text-gray-600">
-                {member.graduation_year && (
-                  <p>🎓 Class of {member.graduation_year}{member.graduation_set ? ` (${member.graduation_set})` : ''}</p>
-                )}
-                {member.location && <p>📍 {member.location}</p>}
-              </div>
-              <button
-                onClick={() => window.location.href = `mailto:${member.email}`}
-                className="mt-4 w-full bg-gray-100 text-gray-700 py-1.5 rounded-md text-sm hover:bg-amber-50 hover:text-amber-700 transition-colors"
-              >
-                Contact
-              </button>
-            </div>
+            </Link>
           ))}
         </div>
 

@@ -7,6 +7,8 @@ import {
   MegaphoneIcon, CakeIcon, AcademicCapIcon,
   CalendarIcon, BriefcaseIcon, PhotoIcon
 } from '@heroicons/react/24/outline'
+import YorubaHero from '@/components/YorubaHero'
+
 
 const features = [
   { name: 'Yearly Dues', href: '/dues', icon: CurrencyDollarIcon, description: 'Pay and track your annual membership dues', yoruba: 'San àwọn owó ẹgbẹ́', color: 'bg-green-500' },
@@ -22,6 +24,9 @@ const features = [
 
 export default function Home() {
   const { member, loading } = useMembershipAuth()
+    const scrollToFeatures = () => {
+    document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })
+  }
 
   if (loading) {
     return (
@@ -33,32 +38,15 @@ export default function Home() {
 
   if (!member) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-900 via-orange-800 to-yellow-900 flex items-center justify-center px-4">
-        <div className="text-center text-white max-w-lg">
-          <h1 className="text-6xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent mb-4">
-            RADLAG
-          </h1>
-          <p className="text-xl text-amber-200 mb-2">Radio School Alumni Association</p>
-          <p className="text-gray-300 mb-8">
-            Ile-iṣẹ́ àwọn ọmọ ilé-ìwé Radio — a member-only portal for RADLAG alumni
-          </p>
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white font-semibold px-8 py-3 rounded-lg transition-colors"
-          >
-            Member Login — Wọlé
-          </Link>
-          <p className="text-sm text-amber-300 mt-4">
-            Only verified RADLAG alumni can access this portal
-          </p>
-        </div>
+      <div className="bg-gray-50 max-w-7xl mx-auto">
+         <YorubaHero onExploreClick={scrollToFeatures} />
       </div>
     )
   }
 
   return (
     <div className="bg-gray-50">
-      {/* Welcome banner */}
+        <YorubaHero onExploreClick={scrollToFeatures} />
       <div className="bg-gradient-to-r from-amber-700 to-orange-700 text-white py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-2xl font-bold">

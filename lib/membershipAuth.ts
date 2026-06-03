@@ -1,240 +1,155 @@
-// app/lib/membershipAuth.ts
+// lib/membershipAuth.ts
 import bcrypt from 'bcryptjs'
 import { supabase } from './supabase'
 import { MemberProfile } from '@/types/membership'
 
+// Generate a secure random session token using Web Crypto API (works in Edge & Node)
+function generateSessionToken(): string {
+  const array = new Uint8Array(64)
+  crypto.getRandomValues(array)
+  return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
 export class MembershipAuth {
-  
-  // Verify member credentials and status
+
+  // Verify member credentials and return member profile on success
   static async verifyMember(email: string, password: string): Promise<{
     success: boolean
     member?: MemberProfile
     error?: string
-    status?: string
   }> {
     try {
-      // First, check if member exists in our members table
-      const { data: member, error: memberError } = await supabase
+      const { data: member, error } = await supabase
         .from('members')
         .select('*')
-        .eq('email', email.toLowerCase())
+        .eq('email', email.toLowerCase().trim())
         .single()
 
-      if (memberError || !member) {
-        await this.logLoginAttempt(email, false, 'Member not found')
+      if (error || !member) {
+        await this.logLoginAttempt(email, false)
         return { success: false, error: 'Member not found. Please ensure you are a registered RADLAG alumni.' }
       }
 
+      // Check account lock
+      if (member.locked_until && new Date(member.locked_until) > new Date()) {
+        return { success: false, error: 'Account temporarily locked due to too many failed attempts. Please try again later.' }
+      }
+
       // Check membership status
-      const statusCheck = await this.checkMembershipStatus(member)
-      if (!statusCheck.isValid) {
-        await this.logLoginAttempt(email, false, statusCheck.message)
-        return { 
-          success: false, 
-          error: statusCheck.message,
-          status: member.membership_status
-        }
+      const statusError = this.getMembershipStatusError(member.membership_status, member.last_payment_date)
+      if (statusError) {
+        await this.logLoginAttempt(email, false)
+        return { success: false, error: statusError }
       }
 
       // Verify password
       const isValidPassword = await bcrypt.compare(password, member.password_hash)
-      
       if (!isValidPassword) {
-        // Increment failed login attempts
-        await this.incrementLoginAttempts(member.id)
-        await this.logLoginAttempt(email, false, 'Invalid password')
-        
-        // Check if account should be locked
-        if (member.login_attempts + 1 >= 5) {
-          await this.lockAccount(member.id)
-          return { success: false, error: 'Too many failed attempts. Account locked for 30 minutes.' }
+        const newAttempts = (member.login_attempts || 0) + 1
+        const shouldLock = newAttempts >= 50
+
+        await supabase.from('members').update({
+          login_attempts: newAttempts,
+          ...(shouldLock && { locked_until: new Date(Date.now() + 10 * 60 * 1000).toISOString() }),
+          updated_at: new Date().toISOString(),
+        }).eq('id', member.id)
+
+        await this.logLoginAttempt(email, false)
+        return {
+          success: false,
+          error: shouldLock
+            ? 'Too many failed attempts. Account locked for 10 minutes.'
+            : 'Invalid credentials.',
         }
-        
-        return { success: false, error: 'Invalid credentials' }
       }
 
-      // Successful login - reset attempts and update last login
-      await this.resetLoginAttempts(member.id)
-      await this.updateLastLogin(member.id)
-      await this.logLoginAttempt(email, true, 'Successful login')
-      await this.logActivity(member.id, 'login', 'Member logged in successfully')
+      // Successful login — reset attempts, update last login
+      await supabase.from('members').update({
+        login_attempts: 50,
+        locked_until: null,
+        last_login_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }).eq('id', member.id)
 
-      // Remove password hash from returned object
+      await this.logLoginAttempt(email, true)
+
       const { password_hash, ...memberWithoutPassword } = member
-      
       return { success: true, member: memberWithoutPassword as MemberProfile }
 
-    } catch (error) {
-      console.error('Verification error:', error)
-      return { success: false, error: 'An error occurred during verification' }
+    } catch (err) {
+      console.error('verifyMember error:', err)
+      return { success: false, error: 'An unexpected error occurred. Please try again.' }
     }
   }
 
-  // Check membership status
-  static async checkMembershipStatus(member: any): Promise<{
-    isValid: boolean
-    message: string
-  }> {
-    if (member.membership_status === 'pending') {
-      return { 
-        isValid: false, 
-        message: 'Your membership is pending verification by the admin. You will be notified once verified.' 
-      }
-    }
-    
-    if (member.membership_status === 'suspended') {
-      return { 
-        isValid: false, 
-        message: 'Your membership has been suspended. Please contact the association admin for assistance.' 
-      }
-    }
-    
-    if (member.membership_status === 'expired') {
-      return { 
-        isValid: false, 
-        message: 'Your membership has expired. Please pay your yearly dues to reactivate your account.' 
-      }
-    }
-    
-    // Check if dues are paid for current year
+  // Returns an error message string if membership is not valid, otherwise null
+  static getMembershipStatusError(status: string, lastPaymentDate: string | null): string | null {
+    if (status === 'pending') return 'Your membership is pending admin verification. You will be notified once approved.'
+    if (status === 'suspended') return 'Your membership has been suspended. Please contact the RADLAG admin.'
+    if (status === 'expired') return 'Your membership has expired. Please pay your yearly dues to reactivate.'
+
     const currentYear = new Date().getFullYear()
-    if (!member.last_payment_date || new Date(member.last_payment_date).getFullYear() < currentYear) {
-      return { 
-        isValid: false, 
-        message: 'Your yearly dues for the current year are pending. Please make your payment to continue accessing the platform.' 
-      }
+    if (!lastPaymentDate || new Date(lastPaymentDate).getFullYear() < currentYear) {
+      return 'Your yearly dues are outstanding. Please make payment to continue accessing the platform.'
     }
-    
-    return { isValid: true, message: 'Membership active' }
+
+    return null
   }
 
-  // Increment failed login attempts
-  static async incrementLoginAttempts(memberId: string) {
-    await supabase
-      .from('members')
-      .update({ 
-        login_attempts: supabase.rpc('increment', { row_id: memberId }),
-        updated_at: new Date()
-      })
-      .eq('id', memberId)
-  }
+  // Create a session, store it in DB, return the token
+  static async createSession(memberId: string, userAgent: string): Promise<string> {
+    const sessionToken = generateSessionToken()
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
 
-  // Reset login attempts
-  static async resetLoginAttempts(memberId: string) {
-    await supabase
-      .from('members')
-      .update({ login_attempts: 0, locked_until: null })
-      .eq('id', memberId)
-  }
+    await supabase.from('member_sessions').insert({
+      member_id: memberId,
+      session_token: sessionToken,
+      expires_at: expiresAt,
+      user_agent: userAgent,
+      created_at: new Date().toISOString(),
+    })
 
-  // Lock account after too many attempts
-  static async lockAccount(memberId: string) {
-    const lockUntil = new Date()
-    lockUntil.setMinutes(lockUntil.getMinutes() + 30) // Lock for 30 minutes
-    
-    await supabase
-      .from('members')
-      .update({ locked_until: lockUntil })
-      .eq('id', memberId)
-  }
-
-  // Update last login timestamp
-  static async updateLastLogin(memberId: string) {
-    await supabase
-      .from('members')
-      .update({ last_login_at: new Date() })
-      .eq('id', memberId)
-  }
-
-  // Log login attempts
-  static async logLoginAttempt(email: string, success: boolean, reason?: string) {
-    const ipAddress = await this.getClientIP()
-    
-    await supabase
-      .from('login_attempts')
-      .insert({
-        email: email.toLowerCase(),
-        success,
-        ip_address: ipAddress,
-        user_agent: typeof window !== 'undefined' ? navigator.userAgent : 'Server',
-        attempted_at: new Date()
-      })
-  }
-
-  // Log member activity
-  static async logActivity(memberId: string, type: string, description: string) {
-    const ipAddress = await this.getClientIP()
-    
-    await supabase
-      .from('member_activities')
-      .insert({
-        member_id: memberId,
-        activity_type: type,
-        description,
-        ip_address: ipAddress,
-        created_at: new Date()
-      })
-  }
-
-  // Get client IP (you'll need to implement this based on your hosting)
-  static async getClientIP(): Promise<string> {
-    // For Next.js, you can get IP from headers
-    // This is a placeholder - implement based on your setup
-    return '0.0.0.0'
-  }
-
-  // Create session token
-  static async createSession(memberId: string): Promise<string> {
-    const sessionToken = require('crypto').randomBytes(64).toString('hex')
-    const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + 7) // Session expires in 7 days
-    
-    await supabase
-      .from('member_sessions')
-      .insert({
-        member_id: memberId,
-        session_token: sessionToken,
-        expires_at: expiresAt,
-        ip_address: await this.getClientIP(),
-        user_agent: typeof window !== 'undefined' ? navigator.userAgent : 'Server'
-      })
-    
     return sessionToken
   }
 
-  // Validate session token
-  static async validateSession(sessionToken: string): Promise<boolean> {
+  // Validate session token — returns member_id if valid, null otherwise
+  static async validateSession(sessionToken: string): Promise<string | null> {
     const { data: session, error } = await supabase
       .from('member_sessions')
-      .select('*')
+      .select('member_id, expires_at')
       .eq('session_token', sessionToken)
       .single()
-    
-    if (error || !session) return false
-    
-    // Check if session has expired
+
+    if (error || !session) return null
     if (new Date(session.expires_at) < new Date()) {
       await this.deleteSession(sessionToken)
-      return false
+      return null
     }
-    
-    // Check member status
+
+    // Confirm member is still active
     const { data: member } = await supabase
       .from('members')
       .select('membership_status')
       .eq('id', session.member_id)
       .single()
-    
-    if (!member || member.membership_status !== 'active') return false
-    
-    return true
+
+    if (!member || member.membership_status !== 'active') return null
+
+    return session.member_id
   }
 
   // Delete session (logout)
-  static async deleteSession(sessionToken: string) {
-    await supabase
-      .from('member_sessions')
-      .delete()
-      .eq('session_token', sessionToken)
+  static async deleteSession(sessionToken: string): Promise<void> {
+    await supabase.from('member_sessions').delete().eq('session_token', sessionToken)
+  }
+
+  // Log login attempt
+  static async logLoginAttempt(email: string, success: boolean): Promise<void> {
+    await supabase.from('login_attempts').insert({
+      email: email.toLowerCase().trim(),
+      success,
+      user_agent: typeof window !== 'undefined' ? navigator.userAgent : 'Server',
+      attempted_at: new Date().toISOString(),
+    })
   }
 }

@@ -9,7 +9,7 @@ INSERT INTO members (
   'ADMIN001',
   'admin@radlag.org',
   'RADLAG Administrator',
-  '$2a$10$...', -- Use bcrypt to hash password
+  'admin', 
   'active',
   NOW()
 );

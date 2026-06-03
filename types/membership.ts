@@ -1,4 +1,5 @@
-// app/types/membership.ts
+// types/membership.ts
+
 export interface MemberProfile {
   id: string
   email: string
@@ -23,7 +24,7 @@ export interface MembershipVerification {
   id: string
   member_id: string
   verified_by: string
-  verification_method: 'manual' | 'automatic'
+  verification_method: 'manual' | 'automatic' | 'admin'
   notes: string
   verified_at: string
 }
